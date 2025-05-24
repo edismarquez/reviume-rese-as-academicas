@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ReviuMe - Reseñas Académicas</title>
+  
+    <link rel="stylesheet" href="stilo.css"/>
+  
+</head>
+<body>
+
+  <h2>ReviuMe Agregar Reseña</h2>
+  <form id="formularioReseña">
+    <label>Nombre del profesor:</label>
+    <input type="text" id="profesor" required>
+
+    <label>Materia:</label>
+    <input type="text" id="materia" required>
+
+    <label>Comentario:</label>
+    <textarea id="comentario" required></textarea>
+
+    <label>Estrellas:</label>
+    <div class="star-rating" id="estrellas"></div>
+
+    <button type="submit">Enviar Reseña</button>
+  </form>
+
+  <h2>Reseñas Recientes</h2>
+  <div id="listaReseñas"></div>
+
+  <script>
+    const palabrasProhibidas = ["tonto", "idiota", "imbécil", "pendejo", "hpta", "mierda"];
+
+    let estrellasSeleccionadas = 0;
+
+    function filtrarComentario(texto) {
+      let filtrado = texto;
+      palabrasProhibidas.forEach(palabra => {
+        const regex = new RegExp(`\\b${palabra}\\b`, 'gi');
+        filtrado = filtrado.replace(regex, '***');
+      });
+      return filtrado;
+    }
+
+    // Crear estrellas con estilo
+    const estrellasDiv = document.getElementById("estrellas");
+    for (let i = 1; i <= 5; i++) {
+      const span = document.createElement("span");
+      span.innerHTML = "&#9733;";
+      span.classList.add("star");
+      span.dataset.valor = i;
+
+      // Hover visual
+      span.addEventListener("mouseenter", function () {
+        for (let j = 0; j < 5; j++) {
+          estrellasDiv.children[j].classList.remove("hovered");
+        }
+        for (let j = 0; j < i; j++) {
+          estrellasDiv.children[j].classList.add("hovered");
+        }
+      });
+
+      span.addEventListener("mouseleave", function () {
+        document.querySelectorAll(".star").forEach(e => e.classList.remove("hovered"));
+      });
+
+      // Selección de estrella
+      span.addEventListener("click", function () {
+        estrellasSeleccionadas = parseInt(this.dataset.valor);
+        document.querySelectorAll(".star").forEach(e => e.classList.remove("selected"));
+        for (let j = 0; j < estrellasSeleccionadas; j++) {
+          estrellasDiv.children[j].classList.add("selected");
+        }
+      });
+
+      estrellasDiv.appendChild(span);
+    }
+
+    document.getElementById("formularioReseña").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const profesor = document.getElementById("profesor").value.trim();
+      const materia = document.getElementById("materia").value.trim();
+      const comentarioOriginal = document.getElementById("comentario").value.trim();
+      const comentario = filtrarComentario(comentarioOriginal);
+
+      if (estrellasSeleccionadas === 0) {
+        alert("Por favor selecciona una calificación con estrellas.");
+        return;
+      }
+
+      const reseña = {
+        profesor,
+        materia,
+        comentario,
+        estrellas: estrellasSeleccionadas,
+        fecha: new Date().toLocaleString()
+      };
+
+      guardarReseña(reseña);
+      mostrarReseñas();
+      this.reset();
+      estrellasSeleccionadas = 0;
+      document.querySelectorAll(".star").forEach(e => e.classList.remove("selected"));
+    });
+
+    function guardarReseña(reseña) {
+      const reseñas = JSON.parse(localStorage.getItem("reseñas")) || [];
+      reseñas.unshift(reseña);
+      localStorage.setItem("reseñas", JSON.stringify(reseñas));
+    }
+
+    function mostrarReseñas() {
+      const contenedor = document.getElementById("listaReseñas");
+      contenedor.innerHTML = "";
+
+      const reseñas = JSON.parse(localStorage.getItem("reseñas")) || [];
+
+      reseñas.forEach(r => {
+        const div = document.createElement("div");
+        div.className = "reseña";
+        div.innerHTML = `
+          <strong>${r.profesor}</strong> - <em>${r.materia}</em><br>
+          ${"★".repeat(r.estrellas)}<br>
+          ${r.comentario}<br>
+          <small>${r.fecha}</small>
+        `;
+        contenedor.appendChild(div);
+      });
+    }
+
+    mostrarReseñas();
+  </script>
+</body>
+</html>
